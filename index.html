@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Location Sharing</title>
+</head>
+
+<body>
+
+    <h2>📍 Share Your Location</h2>
+
+    <p>Your location will be shared only after you allow permission.</p>
+
+    <button onclick="shareLocation()">
+        Share Location
+    </button>
+
+    <script>
+        function shareLocation() {
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+
+                    let latitude = position.coords.latitude;
+                    let longitude = position.coords.longitude;
+
+                    fetch("/location", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            latitude: latitude,
+                            longitude: longitude
+                        })
+                    });
+
+                    alert("Location shared successfully!");
+                },
+
+                function() {
+                    alert("Location permission denied.");
+                }
+            );
+        }
+    </script>
+
+</body>
+</html>
