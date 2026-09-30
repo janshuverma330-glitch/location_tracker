@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Location Sharing</title>
+    <title>Share Location</title>
 </head>
 
 <body>
 
-    <h2>📍 Share Your Location</h2>
+    <h2>Share Your Location</h2>
 
-    <p>Your location will be shared only after you allow permission.</p>
+    <p>
+        Click the button below to share your location.
+    </p>
 
     <button onclick="shareLocation()">
         Share Location
@@ -18,27 +20,33 @@
         function shareLocation() {
 
             navigator.geolocation.getCurrentPosition(
-                function(position) {
 
-                    let latitude = position.coords.latitude;
-                    let longitude = position.coords.longitude;
+                async function(position) {
 
-                    fetch("/location", {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    await fetch("/location", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            latitude: latitude,
-                            longitude: longitude
+                            latitude: lat,
+                            longitude: lon
                         })
                     });
 
-                    alert("Location shared successfully!");
+                    // Google Maps open
+                    const mapURL =
+                        "https://www.google.com/maps/search/?api=1&query="
+                        + lat + "," + lon;
+
+                    window.location.href = mapURL;
                 },
 
                 function() {
-                    alert("Location permission denied.");
+                    alert("Please allow location permission.");
                 }
             );
         }
