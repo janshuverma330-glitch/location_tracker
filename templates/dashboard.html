@@ -1,1 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Location Dashboard</title>
+</head>
 
+<body>
+
+    <h2>Shared Location</h2>
+
+    <p id="status">Waiting for a location...</p>
+
+    <button onclick="showLocation()">Show Location</button>
+
+    <script>
+        async function showLocation() {
+
+            const response = await fetch("/get-location");
+            const data = await response.json();
+
+            if (data.latitude === null) {
+                document.getElementById("status").innerText =
+                    "No location has been shared yet.";
+                return;
+            }
+
+            const mapURL =
+                "https://www.google.com/maps/search/?api=1&query="
+                + data.latitude + "," + data.longitude;
+
+            window.open(mapURL, "_blank");
+
+            document.getElementById("status").innerText =
+                "Location found: " +
+                data.latitude + ", " + data.longitude;
+        }
+    </script>
+
+</body>
+</html>
