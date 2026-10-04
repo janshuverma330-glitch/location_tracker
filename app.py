@@ -1,11 +1,15 @@
 from flask import Flask, render_template, request, jsonify
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 
 latest_location = {
     "latitude": None,
-    "longitude": None
+    "longitude": None,
+    "updated_at": None,
+    "sharing": False
 }
+
 
 @app.route("/")
 def home():
@@ -14,13 +18,24 @@ def home():
 
 @app.route("/location", methods=["POST"])
 def location():
-    data = request.json
+    data = request.get_json(silent=True) or {}
 
-    latest_location["latitude"] = data["latitude"]
-    latest_location["longitude"] = data["longitude"]
+    if data.get("sharing") is False:
+        latest_location["sharing"] = False
+        return jsonify({"success": True})
 
-    print("Latitude:", data["latitude"])
-    print("Longitude:", data["longitude"])
+    lat = data.get("latitude")
+    lon = data.get("longitude")
+
+    if lat is None or lon is None:
+        return jsonify({"error": "Coordinates required"}), 400
+
+    latest_location.update({
+        "latitude": lat,
+        "longitude": lon,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "sharing": True
+    })
 
     return jsonify({"success": True})
 
