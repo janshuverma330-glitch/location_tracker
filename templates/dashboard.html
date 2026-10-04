@@ -1,40 +1,65 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Location Dashboard</title>
 </head>
-
 <body>
+    <h2>Shared Location Dashboard</h2>
 
-    <h2>Shared Location</h2>
-
-    <p id="status">Waiting for a location...</p>
-
-    <button onclick="showLocation()">Show Location</button>
+    <p id="status">Waiting for a shared location...</p>
+    <p id="coordinates"></p>
+    <p id="updated"></p>
+    <button id="mapButton" hidden>Open in Google Maps</button>
 
     <script>
-        async function showLocation() {
+        async function refreshLocation() {
+            try {
+                const response = await fetch("/get-location");
+                const data = await response.json();
 
-            const response = await fetch("/get-location");
-            const data = await response.json();
+                const status = document.getElementById("status");
+                const coords = document.getElementById("coordinates");
+                const updated = document.getElementById("updated");
+                const mapButton = document.getElementById("mapButton");
 
-            if (data.latitude === null) {
-                document.getElementById("status").innerText =
-                    "No location has been shared yet.";
-                return;
+                if (data.latitude === null || !data.sharing) {
+                    status.textContent =
+                        "No active shared location.";
+                    coords.textContent = "";
+                    updated.textContent = "";
+                    mapButton.hidden = true;
+                    return;
+                }
+
+                status.textContent = "Location sharing is active.";
+                coords.textContent =
+                    "Latitude: " + data.latitude +
+                    " | Longitude: " + data.longitude;
+
+                updated.textContent =
+                    "Last update: " +
+                    new Date(data.updated_at).toLocaleTimeString();
+
+                mapButton.hidden = false;
+                mapButton.onclick = () => {
+                    const url =
+                        "https://www.google.com/maps/search/?api=1&query=" +
+                        encodeURIComponent(
+                            data.latitude + "," + data.longitude
+                        );
+                    window.open(url, "_blank");
+                };
+            } catch (error) {
+                document.getElementById("status").textContent =
+                    "Could not load location. Please retry.";
             }
-
-            const mapURL =
-                "https://www.google.com/maps/search/?api=1&query="
-                + data.latitude + "," + data.longitude;
-
-            window.open(mapURL, "_blank");
-
-            document.getElementById("status").innerText =
-                "Location found: " +
-                data.latitude + ", " + data.longitude;
         }
-    </script>
 
+        refreshLocation();
+        setInterval(refreshLocation, 5000);
+    </script>
 </body>
 </html>
