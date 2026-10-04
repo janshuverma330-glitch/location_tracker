@@ -1,48 +1,114 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Location Sharing</title>
 </head>
-
 <body>
+    <h2>Share Your Live Location</h2>
 
-    <h2>📍 Share Your Location</h2>
+    <p>
+        If you choose to start, your location will be shared
+        with the dashboard owner while sharing remains active.
+    </p>
 
-    <p>Your location will be shared only after you allow permission.</p>
-
-    <button onclick="shareLocation()">
-        Share Location
-    </button>
+    <button id="start">Start Sharing</button>
+    <button id="stop" disabled>Stop Sharing</button>
+    <p id="status">Sharing is off.</p>
 
     <script>
-        function shareLocation() {
+        let watchId = null;
+
+        const status = document.getElementById("status");
+        const start = document.getElementById("start");
+        const stop = document.getElementById("stop");
+
+        async function sendLocation(position) {
+            try {
+                const response = await fetch("/location", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        sharing: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Server error");
+                }
+
+                status.textContent = "Location shared and updating.";
+            } catch (error) {
+                status.textContent = "Could not send location. Try again.";
+            }
+        }
+
+        start.addEventListener("click", () => {
+            if (!navigator.geolocation) {
+                status.textContent = "Geolocation is not supported.";
+                return;
+            }
+
+            status.textContent = "Waiting for location permission...";
 
             navigator.geolocation.getCurrentPosition(
-                function(position) {
+                position => {
+                    sendLocation(position);
 
-                    let latitude = position.coords.latitude;
-                    let longitude = position.coords.longitude;
-
-                    fetch("/location", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
+                    watchId = navigator.geolocation.watchPosition(
+                        sendLocation,
+                        () => {
+                            status.textContent =
+                                "Location unavailable. Check permission.";
                         },
-                        body: JSON.stringify({
-                            latitude: latitude,
-                            longitude: longitude
-                        })
-                    });
+                        {
+                            enableHighAccuracy: true,
+                            maximumAge: 0,
+                            timeout: 15000
+                        }
+                    );
 
-                    alert("Location shared successfully!");
+                    start.disabled = true;
+                    stop.disabled = false;
                 },
-
-                function() {
-                    alert("Location permission denied.");
+                () => {
+                    status.textContent =
+                        "Permission denied or location unavailable.";
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 15000
                 }
             );
-        }
-    </script>
+        });
 
+        stop.addEventListener("click", async () => {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+
+            try {
+                await fetch("/location", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ sharing: false })
+                });
+            } finally {
+                status.textContent = "Sharing stopped.";
+                start.disabled = false;
+                stop.disabled = true;
+            }
+        });
+    </script>
 </body>
 </html>
